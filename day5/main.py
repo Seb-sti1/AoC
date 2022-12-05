@@ -34,7 +34,9 @@ for line in Lines:
     t = int(sp[5]) - 1
     
     for i in range(nb):
-        crates[t].append(crates[f][-1])
+        crates[t].append(crates[f][-nb + i])
+        
+    for i in range(nb):
         crates[f].pop(-1)
     	
 print(crates)
