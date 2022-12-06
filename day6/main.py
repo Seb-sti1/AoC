@@ -15,7 +15,7 @@ def all_diff(cars):
 # Strips the newline character
 for line in Lines:
     data = line.strip()
-    L = 4
+    L = 14
     
     for i in range(len(data) - L):
     	
