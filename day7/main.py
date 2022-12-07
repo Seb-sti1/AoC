@@ -41,14 +41,16 @@ for line in Lines:
         if not current_dir + words[1] in seen_files:
             files[current_dir + words[1]] = int(words[0])
 
+total_used = 0
 
 for path in files:
+    total_used += files[path]
     print(f"{path} {files[path]}")
     
-      
+total_unused = 70000000 - total_used
 dirs = set(dirs)
 
-S = 0
+candidate = -1
 
 for d in dirs:
     dS = 0
@@ -57,10 +59,8 @@ for d in dirs:
         if path.startswith(d):
             dS += files[path]
     
-    #print(f"{d} {dS}")
-    
-    if dS < 100000:
-        S += dS
+    if dS > 30000000 - total_unused and (candidate == -1 or dS < candidate):
+        candidate = dS
 
-print(S)
+print(candidate)
 
