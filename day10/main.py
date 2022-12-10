@@ -1,14 +1,17 @@
 S = 0
+CRT = ""
 
 
 def end_cycle(cycle, x):
-    global S
+    global CRT
 
-    cycles = [20, 60, 100, 140, 180, 220]
+    if x <= cycle % 40 <= x + 2:
+        CRT += "#"
+    else:
+        CRT += "."
 
-    if cycle in cycles:
-        print(x)
-        S += cycle * x
+    if cycle % 40 == 0:
+        CRT += "\n"
 
 
 def iterate_line(lines):
@@ -33,4 +36,4 @@ def iterate_line(lines):
 file = open('input', 'r')
 iterate_line(file.readlines())
 
-print(S)
+print(CRT)
