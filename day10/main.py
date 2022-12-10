@@ -5,7 +5,14 @@ CRT = ""
 def end_cycle(cycle, x):
     global CRT
 
-    if x <= cycle % 40 <= x + 2:
+    cursor_pos = cycle
+
+    while cursor_pos > 40:
+        cursor_pos -= 40
+
+    print(f"{cycle} {cursor_pos}")
+
+    if x <= cursor_pos <= x + 2:
         CRT += "#"
     else:
         CRT += "."
@@ -19,18 +26,19 @@ def iterate_line(lines):
     cycle = 0
 
     for line in lines:
-        line = line.strip().split(" ")
+        if line.strip() != "":
+            line = line.strip().split(" ")
 
-        if line[0] == "addx":
-            cycle += 1
-            end_cycle(cycle, x)
+            if line[0] == "addx":
+                cycle += 1
+                end_cycle(cycle, x)
 
-            cycle += 1
-            end_cycle(cycle, x)
-            x += int(line[1])
-        else:
-            cycle += 1
-            end_cycle(cycle, x)
+                cycle += 1
+                end_cycle(cycle, x)
+                x += int(line[1])
+            else:
+                cycle += 1
+                end_cycle(cycle, x)
 
 
 file = open('input', 'r')
