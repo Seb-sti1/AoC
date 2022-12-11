@@ -1,48 +1,29 @@
 class Monkey:
+    idx = None
     inspected_items = 0
     items = []
 
-    def __init__(self):
+    def __init__(self, idx):
+        self.idx = idx
         self.false_monkey = None
         self.true_monkey = None
         self.test = None
         self.operation = None
 
     def set_starting_items(self, starting_items):
-        print(starting_items)
         self.items = starting_items
 
     def set_operation(self, operation):
-        print(operation)
         self.operation = operation
 
     def set_test(self, test):
-        print(test)
         self.test = test
 
     def set_true_monkey(self, true_monkey):
-        print(true_monkey)
         self.true_monkey = true_monkey
 
     def set_false_monkey(self, false_monkey):
-        print(false_monkey)
         self.false_monkey = false_monkey
-
-    def inspect_item(self):
-        if len(self.items) == 0:
-            return None
-        self.inspected_items += 1
-
-        item = self.items.pop(0)
-        print(f"{item} -> {self.operation.replace('old', str(item))} -> ", end="")
-        item = eval(self.operation.replace('old', str(item)))
-        item = int(item / 3)
-        print(item)
-
-        if item % self.test == 0:
-            return self.true_monkey, item
-        else:
-            return self.false_monkey, item
 
 
 monkeys = []
@@ -51,9 +32,6 @@ monkeys = []
 def iterate_line(lines):
     global monkeys
 
-    x = 1
-    cycle = 0
-
     monkey = None
 
     for line in lines:
@@ -61,11 +39,18 @@ def iterate_line(lines):
             words = line.strip().split(" ")
 
             if words[0] == "Monkey":
-                monkey = Monkey()
+                monkey = Monkey(len(monkeys))
             elif words[0] == "Starting":
                 monkey.set_starting_items([int(words[i].replace(',', '')) for i in range(2, len(words))])
             elif words[0] == "Operation:":
-                monkey.set_operation(" ".join(words[3:]))
+                arg = words[5]
+                op = words[4]
+
+                operation = ((lambda x: x * x) if arg == 'old' else
+                             (lambda c: lambda x: x * c)(int(arg)) if op == '*' else
+                             (lambda c: lambda x: x + c)(int(arg)))
+
+                monkey.set_operation(operation)
             elif words[0] == "Test:":
                 monkey.set_test(int(words[3]))
             elif words[0] == "If" and words[1] == "true:":
@@ -78,22 +63,38 @@ def iterate_line(lines):
 file = open('input', 'r')
 iterate_line(file.readlines())
 
-for i in range(20):  # round
-    print(f"Round {i + 1}")
+mod = 1
+for monkey in monkeys:
+    mod *= monkey.test
+
+for i in range(10_000):  # round
+    if i % 100 == 0:
+        print(f"Round {i + 1}")
+
     for monkey in monkeys:
-        for j in range(len(monkey.items)):
-            result = monkey.inspect_item()
-            print(result)
+        for item in monkey.items:
+            monkey.inspected_items += 1
+            item = monkey.operation(item)
+            item = int((item % mod))
 
-            if result is not None:
-                idx, item = result
-                monkeys[idx].items.append(item)
+            if item % monkey.test == 0:
+                monkeys[monkey.true_monkey].items.append(item)
+            else:
+                monkeys[monkey.false_monkey].items.append(item)
 
-    print(f"After round {i+1}")
+        monkey.items = []
     j = 0
     for monkey in monkeys:
-        print(f"Monkey {j} : {' '.join([str(e) for e in monkey.items])}")
+        print(f"Monkey {j} {' '.join([str(item) for item in monkey.items])}")
         j += 1
 
+
+j = 0
 for monkey in monkeys:
     print(f"Monkey {j} inspected items {monkey.inspected_items} times")
+    j += 1
+
+result = max([monkey.inspected_items for monkey in monkeys])
+result *= max([monkey.inspected_items for monkey in monkeys if monkey.inspected_items != result])
+
+print(result)
