@@ -1,4 +1,5 @@
 from ast import literal_eval
+from functools import cmp_to_key
 
 
 def process(left, right):
@@ -33,28 +34,22 @@ def process(left, right):
 
 
 def iterate_line(lines):
-    left = None
-    right = None
-
-    score = 0
-    pair = 1
+    parsed_lines = [[[2]], [[6]]]
 
     for line in lines:
         if line.strip() != "":
             line = line.strip()
 
-            if left is None:
-                left = literal_eval(line)
-            elif right is None:
-                right = literal_eval(line)
-                if process(left, right) == 1:
-                    print(pair)
-                    score += pair
-        else:
-            left = None
-            right = None
-            pair += 1
+            parsed_lines.append(literal_eval(line))
 
+    sorted_lines = sorted(parsed_lines, key=cmp_to_key(process), reverse=True)
+
+    score = 1
+
+    for i, line in enumerate(sorted_lines):
+        print(line)
+        if line == [[2]] or line == [[6]]:
+            score *= (i + 1)
     print(score)
 
 
