@@ -1,4 +1,3 @@
-
 def draw_scan(scan):
     for line in scan:
         for s in line:
@@ -13,7 +12,6 @@ def draw_scan(scan):
 
 
 def iterate_sand(scan, x, y):
-
     n, m = len(scan), len(scan[0])
 
     if y == n - 1:
@@ -25,7 +23,7 @@ def iterate_sand(scan, x, y):
         return iterate_sand(scan, x, y + 1)
 
     if x == 0 or x == m - 1:
-        return False
+        raise Exception("Grid too small")
 
     if scan[y + 1][x - 1] == 0:
         scan[y][x] = 0
@@ -43,6 +41,8 @@ def iterate_sand(scan, x, y):
 def process(scan):
     i = 0
     while True:
+        if scan[0][500] != 0:
+            break
         scan[0][500] = 2
 
         result = iterate_sand(scan, 500, 0)
@@ -53,12 +53,16 @@ def process(scan):
 
         i += 1
 
+    draw_scan(scan)
     print(i)
 
 
 def iterate_line(lines):
+    row, column = 180, 700
 
-    scan = [[0 for x in range(507)] for y in range(178)]
+    scan = [[0 for x in range(column)] for y in range(row)]
+
+    max_y = 0
 
     for line in lines:
         if line.strip() != "":
@@ -70,18 +74,23 @@ def iterate_line(lines):
                 A = points[i].split(",")
                 B = points[i + 1].split(",")
 
-                y, x = (int(A[0]), int(A[1]))
-                m, l = (int(B[0]), int(B[1]))
+                x, y = (int(A[0]), int(A[1]))
+                l, m = (int(B[0]), int(B[1]))
+
+                max_y = max(y, m, max_y)
 
                 if abs(x - l) > 0:
                     for j in range(min(x, l), max(x, l) + 1):
-                        scan[j][y] = 1
+                        scan[y][j] = 1
 
                 if abs(y - m) > 0:
                     for k in range(min(y, m), max(y, m) + 1):
-                        scan[x][k] = 1
+                        scan[k][x] = 1
+
+    scan[max_y + 2] = [1 for x in range(column)]
 
     process(scan)
+
 
 file = open('input', 'r')
 iterate_line(file.readlines())
