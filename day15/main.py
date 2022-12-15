@@ -18,35 +18,49 @@ def draw_scan(scan):
         print()
 
 
-def find_known_position(y, k, l, n, m, sensors, beacons):
-    line = [0 for x in range(n - k + 1)]
+def find_unknown_position(y, k, l, n, m, sensors, beacons):
+    possible_x = [[k, m]]
 
-    for idx, S in enumerate(sensors):
-        if S[1] == y:
-            line[S[0] - k] = 1
+    for S in sensors:
 
-        B = beacons[idx]
+        dist_y = abs(S[1] - y)
+        max_dist_x = S[2] - dist_y
+        exclusion = [S[0] - max_dist_x, S[0] + max_dist_x]
+        """
+        S[0] - max_dist_x <= x <= S[0] + max_dist_x
+        
+        abs(x - S[0]) <= max_dist_x <=  S[2] - dist_y <= S[2] - abs(S[1] - y)
+        abs(x - S[0]) + abs(S[1] - y) <= S[2]
+        """
 
-        if B[1] == y:
-            line[B[0] - k] = 2
+        if exclusion[0] <= exclusion[1]:
+            new_possible_x = []
 
-        dist = abs(B[0] - S[0]) + abs(B[1] - S[1])
-        from_y = abs(y - S[1])
+            for idx, inter in enumerate(possible_x):
+                if exclusion[1] <= inter[0] or exclusion[0] >= inter[1]:
+                    new_possible_x.append(inter)
+                else:
+                    if exclusion[0] > inter[0] and exclusion[1] < inter[1]:
+                        new_possible_x.append([inter[0], exclusion[0] - 1])
+                        new_possible_x.append([exclusion[1] + 1, inter[1]])
 
-        for i in range(- dist + from_y, dist - from_y + 1):
-            if k <= S[0] + i <= n:
-                if line[S[0] + i - k] == 0:
-                    line[S[0] + i - k] = 3
-            else:
-                raise Exception(f"Too small ! {S[0] + i - k} {n - S[0] - i}")
-    #  draw_scan([line])
+                    elif inter[0] < exclusion[1] < inter[1]:
+                        inter[0] = exclusion[1] + 1
 
-    score = 0
-    for e in line:
-        if e == 3:
-            score += 1
+                        if inter[0] <= inter[1]:
+                            new_possible_x.append(inter)
+                    elif inter[1] > exclusion[0] > inter[0]:
+                        inter[1] = exclusion[0] - 1
 
-    return score
+                        if inter[0] <= inter[1]:
+                            new_possible_x.append(inter)
+
+            possible_x = new_possible_x
+
+            if len(possible_x) == 0:
+                return False
+
+    return possible_x[0][0], y
 
 
 def iterate_line(lines):
@@ -56,22 +70,25 @@ def iterate_line(lines):
     for line in lines:
         if line.strip() != "":
             coords = re.findall("[xy]=(-?\\d+)", line.strip())
-
-            sensors.append((int(coords[0]), int(coords[1])))
-
+            a, b = int(coords[0]), int(coords[1])
             x, y = int(coords[2]), int(coords[3])
-            #  if (x, y) not in beacons:
+
+            sensors.append((a, b, abs(a - x) + abs(b - y)))
             beacons.append((x, y))
 
-    k, l = min([s[0] for s in sensors] + [b[0] for b in beacons]) - 700176, \
-        min([s[1] for s in sensors] + [b[1] for b in beacons])
-    n, m = max([s[0] for s in sensors] + [b[0] for b in beacons]), \
-        max([s[1] for s in sensors] + [b[1] for b in beacons])
+    k, l = 0, 0
+    n, m = 4000000 - 1, 4000000 - 1
 
-    score = find_known_position(2_000_000, k, l, n, m, sensors, beacons)
+    for y in range(m, l - 1, -1):
+        result = find_unknown_position(y, k, l, n, m, sensors, beacons)
 
-    print(score)
+        if y % 1000 == 0:
+            print(y * 100 / m)
+
+        if result != False:
+            print(result, result[0] * 4_000_000 + result[1])
+            break
 
 
-file = open('test_input', 'r')
+file = open('input', 'r')
 iterate_line(file.readlines())
