@@ -19,7 +19,6 @@ class Matrix:
 
         self.current_piece = -1
         self.highest = 0
-        self.removed_lines = 0
 
     def refresh_highest_rock(self):
         self.highest = 0
@@ -54,17 +53,6 @@ class Matrix:
 
         self.height += to_add
 
-        N = 10_000_000
-        if self.height > N:
-            print("reduce")
-            self.height -= (N - 500)
-            self.highest -= (N - 500)
-            self.pos = (self.pos[0], self.pos[1] - (N - 500))
-
-            self.removed_lines += (N - 500)
-
-            self.data = self.data[(N - 500):]
-
     def spawn(self):
         self.current_piece = (self.current_piece + 1) % len(pieces)
         piece = pieces[self.current_piece]
@@ -75,18 +63,6 @@ class Matrix:
         to_add = self.highest + 3 + piece_height - self.height
         if to_add > 0:
             self.add_height(to_add)
-
-    def move(self, x, y, piece):
-        new_pos = self.pos[0] + x, self.pos[1] + y
-
-        # check collisions
-        for position in piece:
-            if 0 > position[1] + new_pos[1] or position[0] + new_pos[0] < 0 or position[0] + new_pos[0] >= 7 or \
-                    self.data[new_pos[1] + position[1]][new_pos[0] + position[0]] == 1:
-                return False
-
-        self.pos = new_pos
-        return True
 
     def end_move(self, piece):
         for position in piece:
@@ -108,44 +84,76 @@ def iterate_line(lines):
     gaz_idx = 0
 
     # 1_000_000_000_000
-    N = 10_000_000
+    N = 1_000_000_000_000
     T = max(int(N / 100), 1_000)
 
     percent = time.time()
 
-    while rocks < N:
-        a = time.time_ns()
+    seen = []
+    date = []
 
+    period = None
+
+    while rocks < N:
         matrix.spawn()
         piece = pieces[matrix.current_piece]
         rocks += 1
 
-        stopped = False
+        state = (matrix.current_piece, gaz_idx)
+        if state in seen:
+            last_seen = date[seen.index(state) - 1]
+            period = rocks - last_seen[0] - 1
+            height_difference = matrix.highest - last_seen[1]
 
-        t = time.time_ns()
+            if (N - rocks + 1) % period == 0:
+                print(matrix.highest + (N - rocks + 1)//period*height_difference)
+                break
+
+        stopped = False
+        pos = matrix.pos[0], matrix.pos[1]
+
         while not stopped:
             # push by gaz
-            matrix.move(gaz[gaz_idx], 0, piece)
+            new_pos = pos[0] + gaz[gaz_idx], pos[1]
             gaz_idx = (gaz_idx + 1) % len(gaz)
 
+            collide = False
+            # check collisions
+            for position in piece:
+                if position[0] + new_pos[0] < 0 or position[0] + new_pos[0] >= 7 or \
+                        matrix.data[new_pos[1] + position[1]][new_pos[0] + position[0]] == 1:
+                    collide = True
+                    break
+
+            if not collide:
+                pos = new_pos
+
             # move down
-            stopped = not matrix.move(0, -1, piece)
-        t = time.time_ns() - t
+            new_pos = pos[0], pos[1] - 1
+
+            stopped = False
+            # check collisions
+            for position in piece:
+                if 0 > position[1] + new_pos[1] or matrix.data[new_pos[1] + position[1]][new_pos[0] + position[0]] == 1:
+                    stopped = True
+                    break
+
+            if not stopped:
+                pos = new_pos
+            else:
+                matrix.pos = pos
 
         matrix.end_move(piece)
 
-        a = time.time_ns() - a
+        seen.append(state)
+        date.append((rocks, matrix.highest))
 
         if rocks % T == 0:
             print(rocks / N * 100)
             print(time.time() - percent)
 
-            percent_move = int(t / a * 100)
-            print(f"total {t} move {percent_move}")
             percent = time.time()
 
-    print(matrix.highest + matrix.removed_lines)
 
-
-file = open('test_input', 'r')
+file = open('input', 'r')
 iterate_line(file.readlines())
