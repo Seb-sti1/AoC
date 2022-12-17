@@ -2,7 +2,7 @@ import re
 
 
 def search_tree(node, tree, seen, time_left):
-    if len(seen) == len(tree) - 1 or time_left == 0:
+    if time_left <= 0:
         return 0
 
     score = time_left * tree[node]["flow"]
@@ -12,11 +12,10 @@ def search_tree(node, tree, seen, time_left):
         if neighbor not in seen:
             time_to_spend = tree[node]["neighbors"][neighbor] + 1
 
-            if time_to_spend <= time_left:
-                max_total = max(max_total, search_tree(neighbor,
-                                                       tree,
-                                                       seen + [node],
-                                                       time_left - time_to_spend))
+            max_total = max(max_total, search_tree(neighbor,
+                                                   tree,
+                                                   seen + [node],
+                                                   time_left - time_to_spend))
 
     return score + max_total
 
