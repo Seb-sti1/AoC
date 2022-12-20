@@ -1,25 +1,24 @@
 class Number:
-    def __init__(self, n):
+    def __init__(self, n, order_of_mixing):
         self.n = n
-        self.moved = False
+        self.order_of_mixing = order_of_mixing
 
     def __str__(self):
-        if self.moved:
-            return f"({self.n})"
-        return f"{self.n}"
+        return str(self.n)
 
 
 def mixing(numbers):
-    print(len(numbers))
+    len_numbers = len(numbers)
     moved = 0
-    while moved < len(numbers):
 
+    while moved < len_numbers:
         if moved % 1000 == 0:
-            print(moved / len(numbers) * 100)
+            print(moved / len_numbers * 100)
+
         to_moved = -1
 
-        for idx in range(len(numbers)):
-            if not numbers[idx].moved:
+        for idx in range(len_numbers):
+            if numbers[idx].order_of_mixing == moved:
                 to_moved = idx
                 break
 
@@ -31,7 +30,7 @@ def mixing(numbers):
         numbers.insert((to_moved + N.n) % len(numbers), N)
 
         moved += 1
-
+        
 
 def show_list(numbers):
     print(", ".join([str(N) for N in numbers]))
@@ -40,13 +39,16 @@ def show_list(numbers):
 def iterate_line(lines):
     numbers = []
 
-    for line in lines:
+    for i, line in enumerate(lines):
         if line.strip() != "":
-            i = int(line.strip())
+            n = int(line.strip())
 
-            numbers.append(Number(i))
+            numbers.append(Number(n*811589153, i))  # n*811589153
 
-    mixing(numbers)
+    #show_list(numbers)
+
+    for i in range(10):
+        mixing(numbers)
 
     # Find the zero
     position_of_zero = -1
