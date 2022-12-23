@@ -37,29 +37,68 @@ class Map:
         return pos
 
     def wrap_around(self, pos):
+        # 12
+        # 3
+        #45
+        #6
 
-        wrap_around_pos = pos
+        i, j, o = pos
 
-        while self.data[wrap_around_pos[0]][wrap_around_pos[1]] == 2:
-            if pos[2] == 0:
-                wrap_around_pos = (pos[0], (wrap_around_pos[1] + 1) % self.column, pos[2])
-            elif pos[2] == 1:
-                wrap_around_pos = ((wrap_around_pos[0] + 1) % self.row, pos[1], pos[2])
-            elif pos[2] == 2:
-                wrap_around_pos = (pos[0], (wrap_around_pos[1] - 1) % self.column, pos[2])
-            elif pos[2] == 3:
-                wrap_around_pos = ((wrap_around_pos[0] - 1) % self.row, pos[1], pos[2])
+        if i < 0 and j < 100 and o == 3:  # 1 top
+            return j + 2 * 50, 0, 0  # ok
 
-        return wrap_around_pos
+        if i < 50 and j == 49 and o == 2:  # 1 left
+            return 50 - i + 2 * 50 - 1, 0, 0  # ok
+
+        if i < 0 and j >= 100 and o == 3:  # 2 top
+            return self.row - 1, j - 2 * 50, o  # ok
+
+        if i < 50 and j == self.column and o == 0:  # 2 right
+            return 50 - i + 2*50 - 1, 99, 2  # ok
+
+        if i == 50 and j >= 100 and o == 1:  # 2 bot
+            return j - 50, 99, 2  # ok
+
+        if 50 <= i < 100 and j == 49 and o == 2:  # 3 left
+            return 100, i - 50, 1  # ok
+
+        if 50 <= i < 100 and j == 100 and o == 0:  # 3 right
+            return 49, i + 50, 3  # ok
+
+        if i == 99 and j < 50 and o == 3:  # 4 top
+            return j + 50, 50, 0  # ok
+
+        if 100 <= i < 150 and j < 0 and o == 2:  # 4 left
+            return 50 - i + 2*50 - 1, 50, 0  # ok
+
+        if 100 <= i < 150 and j == 100 and o == 0:  # 5 right
+            return 50 - i + 2*50 - 1, 149, 2  # ok
+
+        if i == 150 and 50 <= j < 100 and o == 1:  # 5 bot
+            return j + 2*50, 49, 2  # ok
+
+        if 150 <= i and j < 0 and o == 2:  # 6 left
+            return 0, i - 100, 1  # ok
+
+        if i == 200 and j < 50 and o == 1:  # 6 bot
+            return 0, j + 100, 1  # ok
+
+        if i >= 150 and j == 50 and o == 0:  # 6 right
+            return 149, i - 150 + 50, 3
+
+        return None
 
     def get_valid_pos(self, pos, new_pos):
 
-        if self.data[new_pos[0]][new_pos[1]] == 0:  # the new_pos is on a '.' position
-            return new_pos
-        elif self.data[new_pos[0]][new_pos[1]] == 1:  # the new_pos is on a '#' position
-            return pos
-        else:  # the new_pos in on a ' ' position
-            return self.get_valid_pos(pos, self.wrap_around(new_pos))
+        if 0 <= new_pos[0] < self.row and 0 <= new_pos[1] < self.column:
+            if self.data[new_pos[0]][new_pos[1]] == 0:  # the new_pos is on a '.' position
+                return new_pos
+            elif self.data[new_pos[0]][new_pos[1]] == 1:  # the new_pos is on a '#' position
+                return pos
+            else:  # the new_pos in on a ' ' position
+                return self.get_valid_pos(pos, self.wrap_around(new_pos))
+
+        return self.get_valid_pos(pos, self.wrap_around(new_pos))
 
     def mark_pos(self, pos):
         self.marks[pos[0]][pos[1]] = pos[2]
@@ -69,17 +108,17 @@ class Map:
 
         for i in range(instruction[0]):
             if pos[2] == 0:
-                new_pos = (pos[0], (pos[1] + 1) % self.column, pos[2])
+                new_pos = (pos[0], pos[1] + 1, pos[2])
             elif pos[2] == 1:
-                new_pos = ((pos[0] + 1) % self.row, pos[1], pos[2])
+                new_pos = (pos[0] + 1, pos[1], pos[2])
             elif pos[2] == 2:
-                new_pos = (pos[0], (pos[1] - 1) % self.column, pos[2])
+                new_pos = (pos[0], pos[1] - 1, pos[2])
             elif pos[2] == 3:
-                new_pos = ((pos[0] - 1) % self.row, pos[1], pos[2])
+                new_pos = (pos[0] - 1, pos[1], pos[2])
 
             pos = self.get_valid_pos(pos, new_pos)
             self.mark_pos(pos)
-            #self.print()
+        #self.print()
 
         if instruction[1] == "L":
             pos = (pos[0], pos[1], (pos[2] - 1) % 4)
@@ -147,6 +186,8 @@ def iterate_line(lines):
 
     pos = map.get_starting_point()
     map.mark_pos(pos)
+
+    pos = map.move(pos, (10, ''))
 
     for instruction in path:
         pos = map.move(pos, instruction)
