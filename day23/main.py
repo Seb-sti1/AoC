@@ -103,10 +103,9 @@ def iterate_line(lines):
     print_elves(elves)
     print()
 
-    score = 0
     i = 0
     still_moving = True
-    while still_moving and i < 10:
+    while still_moving:
         i += 1
         new_positions = []
         for pos in elves:
@@ -136,11 +135,9 @@ def iterate_line(lines):
             new_elves[e.pos] = e
         elves = new_elves
 
-        print(f"Round {i}")
-        score = print_elves(elves)
-        print()
+        # print(f"Round {i}")
 
-    print(f"The score after 10 round is {score}")
+    print(f"Final round is {i}")
 
 
 file = open('input', 'r')
