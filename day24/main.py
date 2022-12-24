@@ -14,32 +14,39 @@ class Blizzard:
             return "^"
 
 
+blizzards_evolution = []
+
+
 class State:
 
-    def __init__(self, i, j, n, m, blizzards, start, end, t=0):
+    def __init__(self, i, j, n, m, start, end, t=0):
         self.i = i
         self.j = j
 
         self.n = n
         self.m = m
-        self.blizzards = blizzards
         self.start = start
         self.end = end
 
         self.t = t
 
     def next_states(self):
+        global blizzards_evolution
         possible_states = []
-        next_blizzards = move_blizzards(self.n, self.m, self.blizzards)
+
+        if self.t >= len(blizzards_evolution) - 1:
+            next_blizzards = move_blizzards(self.n, self.m, blizzards_evolution[self.t])
+            blizzards_evolution.append(next_blizzards)
+        next_blizzards = blizzards_evolution[self.t + 1]
 
         for a, b in [(-1, 0), (1, 0), (0, 0), (0, 1), (0, -1)]:
             new_i, new_j = (self.i + a, self.j + b)
             if ((0 < new_i < self.n - 1 and 0 < new_j < self.m - 1) or
-                    (new_i, new_j) == self.start or
-                    (new_i, new_j) == self.end)\
+                (new_i, new_j) == self.start or
+                (new_i, new_j) == self.end) \
                     and (new_i, new_j) not in next_blizzards:
                 possible_states.append(State(new_i, new_j,
-                                             self.n, self.m, next_blizzards,
+                                             self.n, self.m,
                                              self.start, self.end,
                                              self.t + 1))
 
@@ -63,6 +70,10 @@ class State:
         return self.i == other.i and self.j == other.j and self.t == other.t
 
     def print(self):
+        blizzards = blizzards_evolution[self.t]
+
+        print(f"t = {self.t}")
+
         for i in range(self.n):
             for j in range(self.m):
                 if self.i == i and self.j == j:
@@ -73,11 +84,11 @@ class State:
                     print(".", end="")
                 elif i == 0 or i == self.n - 1 or j == 0 or j == self.m - 1:
                     print("#", end="")
-                elif (i, j) in self.blizzards:
-                    if len(self.blizzards[(i, j)]) > 1:
-                        print(len(self.blizzards[(i, j)]), end="")
+                elif (i, j) in blizzards:
+                    if len(blizzards[(i, j)]) > 1:
+                        print(len(blizzards[(i, j)]), end="")
                     else:
-                        o = self.blizzards[(i, j)][0].orientation
+                        o = blizzards[(i, j)][0].orientation
                         if o == 0:
                             print(">", end="")
                         elif o == 1:
@@ -145,19 +156,20 @@ def a_star(start, end):
     while len(border) > 0:
         iterations += 1
 
-        if iterations % 1_000 == 0:
+        if iterations % 5_000 == 0:
             dist = [s.distance_to(end) for s in border]
             dist.sort()
             print(f"{len(border)} states in the border, {len(seen)} seen")
             print(f"Min dist is {min(dist)} max is {max(dist)} median is {dist[int(len(dist) / 2)]}")
 
         state = border.pop(0)
+        state.print()
 
         if (state.i, state.j) == end:
-            return state.t
+            return state
 
         for i, next_state in enumerate(state.next_states()):
-            if next_state not in seen and next_state not in border:
+            if next_state.to_tuple() not in seen and next_state not in border:
                 sorted_append(border, next_state)
 
         seen.append(state.to_tuple())
@@ -190,10 +202,11 @@ def iterate_line(lines):
                 elif line[j] == "^":
                     blizzards[(i, j)] = [Blizzard(3)]
 
-    score = a_star(State(S[0], S[1], n, m, blizzards, S, E), E)
+    blizzards_evolution.append(blizzards)
+    state_to_the_end = a_star(State(S[0], S[1], n, m, S, E), E)
 
-    print(score)
+    print(state_to_the_end.t)
 
 
-file = open('input', 'r')
+file = open('test_input_2', 'r')
 iterate_line(file.readlines())
