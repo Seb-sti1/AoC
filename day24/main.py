@@ -163,7 +163,6 @@ def a_star(start, end):
             print(f"Min dist is {min(dist)} max is {max(dist)} median is {dist[int(len(dist) / 2)]}")
 
         state = border.pop(0)
-        state.print()
 
         if (state.i, state.j) == end:
             return state
@@ -204,9 +203,14 @@ def iterate_line(lines):
 
     blizzards_evolution.append(blizzards)
     state_to_the_end = a_star(State(S[0], S[1], n, m, S, E), E)
+    print(f"Reach the end at {state_to_the_end.t} min")
 
-    print(state_to_the_end.t)
+    go_back = a_star(state_to_the_end, S)
+    print(f"Reach the start at {go_back.t} min")
+
+    finally_to_the_end = a_star(go_back, E)
+    print(f"Reach the end in {finally_to_the_end.t} min")
 
 
-file = open('test_input_2', 'r')
+file = open('input', 'r')
 iterate_line(file.readlines())
