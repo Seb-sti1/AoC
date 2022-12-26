@@ -1,5 +1,4 @@
 import re
-import time
 
 
 class Blueprint:
@@ -15,32 +14,19 @@ class Blueprint:
 
         self.max_conso = None
 
+    def space_size(self, max_geodes):
+        return (self.max_conso.ore * self.max_conso.clay * self.max_conso.obsidian * max(max_geodes, 5)) ** 2
+
 
 class Materials:
-    def __init__(self):
-        self.ore = 0
-        self.clay = 0
-        self.obsidian = 0
-        self.geode = 0
+    def __init__(self, ore=0, clay=0, obsidian=0, geode=0):
+        self.ore = ore
+        self.clay = clay
+        self.obsidian = obsidian
+        self.geode = geode
 
     def copy(self):
-        n = Materials()
-        n.ore = self.ore
-        n.clay = self.clay
-        n.obsidian = self.obsidian
-        n.geode = self.geode
-
-        return n
-
-    def __str__(self):
-        return f"Materials : ore {self.ore} clay {self.clay} obsidian {self.obsidian} geode {self.geode}"
-
-    def __eq__(self, other):
-        return self.ore == other.ore and self.clay == other.clay and \
-            self.obsidian == other.obsidian and self.geode == other.geode
-
-    def to_tuple(self):
-        return self.ore, self.clay, self.obsidian, self.geode
+        return Materials(self.ore, self.clay, self.obsidian, self.geode)
 
 
 class Robots:
@@ -50,64 +36,34 @@ class Robots:
         self.obsidian = obsidian
         self.geode = geode
 
-    def add(self, t, n):
+    def add(self, t):
         if t == 0:
-            self.ore += n
+            self.ore += 1
         elif t == 1:
-            self.clay += n
+            self.clay += 1
         elif t == 2:
-            self.obsidian += n
+            self.obsidian += 1
         elif t == 3:
-            self.geode += n
+            self.geode += 1
 
     def copy(self):
         return Robots(self.ore, self.clay, self.obsidian, self.geode)
 
-    def __str__(self):
-        return f"Robots : ore {self.ore} clay {self.clay} obsidian {self.obsidian} geode {self.geode}"
-
-    def __eq__(self, other):
-        return self.ore == other.ore and self.clay == other.clay and \
-            self.obsidian == other.obsidian and self.geode == other.geode
-
-    def to_tuple(self):
-        return self.ore, self.clay, self.obsidian, self.geode
-
-
-def sum_prod(a, b):
-    result = 0
-
-    for i in range(len(a)):
-        result += a[i] * b[i]
-
-    return result
-
 
 class State:
-    def __init__(self, robots, materials, blueprint, time_left):
+    def __init__(self, robots, materials, time_left):
         self.robots = robots
         self.materials = materials
-        self.blueprint = blueprint
         self.time_left = time_left
 
-    def next_states(self):
+    def next_states(self, blueprint):
         acceptable_states = []
 
-        max_conso = self.blueprint.max_conso
+        max_conso = blueprint.max_conso
 
-        new_materials = self.materials.copy()
-        new_materials.ore += self.robots.ore
-        new_materials.clay += self.robots.clay
-        new_materials.obsidian += self.robots.obsidian
-        new_materials.geode += self.robots.geode
+        for i in range(len(blueprint.robot_recipes) - 1, -1, -1):
+            recipe = blueprint.robot_recipes[i]
 
-        if (self.materials.ore <= max_conso.ore and self.robots.ore > 0) \
-                or (self.materials.clay <= max_conso.clay and self.robots.clay > 0) \
-                or (self.materials.obsidian <= max_conso.obsidian and self.robots.obsidian > 0) \
-                or self.robots.geode > 0:
-            acceptable_states.append(State(self.robots.copy(), new_materials, self.blueprint, self.time_left - 1))
-
-        for i, recipe in enumerate(self.blueprint.robot_recipes):
             if i == 0 and self.robots.ore >= max_conso.ore:
                 continue
 
@@ -119,49 +75,57 @@ class State:
 
             if recipe[0] <= self.materials.ore and recipe[1] <= self.materials.clay and \
                     recipe[2] <= self.materials.obsidian:
-                new_materials_with_new_robot = new_materials.copy()
-                new_materials_with_new_robot.ore -= recipe[0]
-                new_materials_with_new_robot.clay -= recipe[1]
-                new_materials_with_new_robot.obsidian -= recipe[2]
+                new_materials = self.materials.copy()
+                new_materials.ore += self.robots.ore - recipe[0]
+                new_materials.clay += self.robots.clay - recipe[1]
+                new_materials.obsidian += self.robots.obsidian - recipe[2]
+                new_materials.geode += self.robots.geode
 
                 new_robots = self.robots.copy()
-                new_robots.add(i, 1)
+                new_robots.add(i)
 
-                acceptable_states.append(State(new_robots, new_materials_with_new_robot,
-                                               self.blueprint, self.time_left - 1))
+                acceptable_states.append(State(new_robots, new_materials, self.time_left - 1))
 
-        return acceptable_states[::-1]
+        if (self.materials.ore < max_conso.ore and self.robots.ore > 0) \
+                or (self.materials.clay < max_conso.clay and self.robots.clay > 0) \
+                or (self.materials.obsidian < max_conso.obsidian and self.robots.obsidian > 0) \
+                or self.robots.geode > 0:
+            new_materials = self.materials.copy()
+            new_materials.ore += self.robots.ore
+            new_materials.clay += self.robots.clay
+            new_materials.obsidian += self.robots.obsidian
+            new_materials.geode += self.robots.geode
+
+            acceptable_states.append(State(self.robots.copy(), new_materials, self.time_left - 1))
+
+        return acceptable_states
 
     def theoretical_max(self):
+        """
+
+        :return:
+        """
+
+        """
         max_geodes = self.materials.geode
 
         j = 0
         for i in range(self.time_left, -1, -1):
             max_geodes += (self.robots.geode + j) * i
             j += 1
+        """
 
-        return max_geodes
-
-    def __str__(self):
-        return f"{str(self.robots)} ; {str(self.materials)} ; {self.time_left}"
-
-    def __eq__(self, other):
-        if isinstance(other, tuple):
-            return self.to_tuple() == other
-        return self.robots == other.robots and self.materials == other.materials
-
-    def to_tuple(self):
-        return self.robots.to_tuple() + self.materials.to_tuple() + (self.time_left,)
+        return self.time_left * (self.time_left + 1) * (3 * self.robots.geode + self.time_left - 1) / 6 \
+            + self.materials.geode
 
 
-def dfs(state, max_geodes):
-    if state.time_left == 0:
+def dfs(state, blueprint, max_geodes, recur=0):
+    if state.time_left <= 0:
         return max(state.materials.geode, max_geodes)
 
-    for new_state in state.next_states():
-
-        if max_geodes < 0 or new_state.theoretical_max() >= max_geodes:
-            max_geodes = max(dfs(new_state, max_geodes), max_geodes)
+    for new_state in state.next_states(blueprint):
+        if max_geodes < 0 or new_state.theoretical_max() > max_geodes:
+            max_geodes = max(dfs(new_state, blueprint, max_geodes, recur + 1), max_geodes)
 
     return max_geodes
 
@@ -172,7 +136,8 @@ def iterate_line(lines):
     for line in lines:
         if line.strip() != "":
             b = re.search(
-                r"^Blueprint (\d+): Each ore robot costs (\d+) ore\. Each clay robot costs (\d+) ore\. Each obsidian robot costs (\d+) ore and (\d+) clay\. Each geode robot costs (\d+) ore and (\d+) obsidian\.$",
+                r"^Blueprint (\d+): Each ore robot costs (\d+) ore\. Each clay robot costs (\d+) ore\. Each ob"
+                r"sidian robot costs (\d+) ore and (\d+) clay\. Each geode robot costs (\d+) ore and (\d+) obsidian\.$",
                 line.strip())
 
             blueprints.append(Blueprint(int(b[1]),
@@ -182,8 +147,8 @@ def iterate_line(lines):
                                         (int(b[6]), 0, int(b[7]))
                                         ))
 
-    score = 0
-    for blueprint in blueprints:
+    score = 1
+    for blueprint in blueprints[:3]:
         max_conso = Materials()
 
         for recipe in blueprint.robot_recipes:
@@ -193,15 +158,13 @@ def iterate_line(lines):
 
         blueprint.max_conso = max_conso
 
-        max_geodes = dfs(State(Robots(1, 0, 0, 0), Materials(), blueprint, 24), 0)
+        max_geodes = dfs(State(Robots(1, 0, 0, 0), Materials(), 32), blueprint, 0)
         print(f"Max geodes for blueprint {blueprint.id} is {max_geodes}")
 
-        score += blueprint.id * max_geodes
+        score *= max_geodes
 
     print(score)
 
 
 file = open('input', 'r')
-t = time.time()
 iterate_line(file.readlines())
-print(f"it took {time.time() - t}")
