@@ -18,7 +18,7 @@ struct Part {
 fn main() {
     let contents = fs::read_to_string("input").expect("Should have been able to read the file");
 
-    println!("Day 1");
+    println!("Day 3");
 
     let games = process_input(contents);
 
