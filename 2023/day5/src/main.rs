@@ -1,7 +1,9 @@
+use std::cmp::min;
 use std::fs;
 use std::str::FromStr;
 use regex::{Regex};
 
+#[derive(Debug)]
 enum Type {
     Seed,
     Soil,
@@ -25,15 +27,26 @@ impl FromStr for Type {
             "temperature" => Ok(Type::Temperature),
             "humidity" => Ok(Type::Humidity),
             "location" => Ok(Type::Location),
-            _      => Err(()),
+            _ => Err(()),
         }
     }
 }
 
+#[derive(Debug)]
 struct Range {
     src: u64,
     dest: u64,
     len: u64,
+}
+
+impl Range {
+    pub(crate) fn clone(&self) -> Range {
+        Range {
+            src: self.src,
+            dest: self.dest,
+            len: self.len,
+        }
+    }
 }
 
 struct Transformation {
@@ -84,6 +97,7 @@ fn process_input(content: String) -> (Vec<u64>, Vec<Transformation>) {
 
             if tr.is_some() {
                 let mut tr = tr.unwrap();
+                ranges.sort_by_key(|r| r.src);
                 tr.ranges = ranges;
                 ranges = vec![];
 
@@ -96,13 +110,12 @@ fn process_input(content: String) -> (Vec<u64>, Vec<Transformation>) {
                 ranges: vec![],
             })
         } else if tr.is_some() {
-
             let range_captures = range_re.captures(line);
 
             if range_captures.is_some() {
                 let range_captures = range_captures.unwrap();
 
-                 ranges.push(Range {
+                ranges.push(Range {
                     src: range_captures.get(2).unwrap().as_str().parse::<u64>().unwrap(),
                     dest: range_captures.get(1).unwrap().as_str().parse::<u64>().unwrap(),
                     len: range_captures.get(3).unwrap().as_str().parse::<u64>().unwrap(),
@@ -114,9 +127,8 @@ fn process_input(content: String) -> (Vec<u64>, Vec<Transformation>) {
     // last transformation
     if tr.is_some() {
         let mut tr = tr.unwrap();
+        ranges.sort_by_key(|r| r.src);
         tr.ranges = ranges;
-        ranges = vec![];
-
         transformations.push(tr);
     }
 
@@ -143,25 +155,117 @@ fn part1(data: &(Vec<u64>, Vec<Transformation>)) -> i32 {
 
     for n in seeds {
         let n = *n;
-        print!("{}: ", n);
         let mut location = n;
 
         for t in transformation {
             location = do_transformation(location, t);
-            print!("-> {}", location);
         }
 
         locations.push(location);
-        println!();
     }
 
     *locations.iter().min().unwrap() as i32
 }
 
+fn do_range_transformation(r: Range, t: &Transformation) -> Vec<Range> {
+    let mut ranges: Vec<Range> = Vec::from([r]);
+
+    for tr in &t.ranges {
+        let mut new_ranges: Vec<Range> = vec![];
+
+        for r in ranges {
+
+            // r     |-----------|
+            // tr |----|
+            // or
+            // r     |-----------|
+            // tr |---------------|
+            if tr.src <= r.src && r.src < tr.src + tr.len {
+                new_ranges.push(Range {
+                    src: r.src,
+                    dest: tr.dest + (r.src - tr.src),
+                    len: min(tr.src + tr.len - r.src, r.len),
+                });
+
+                // r     |-----------|
+                // tr |----|
+                if tr.src + tr.len < r.src + r.len {
+                    new_ranges.push(Range {
+                        src: tr.src + tr.len,
+                        dest: tr.src + tr.len,
+                        len: r.src + r.len - (tr.src + tr.len),
+                    });
+                }
+            }
+            // r     |-----------|
+            // tr      |----|
+            // or
+            // r     |-----------|
+            // tr      |---------------|
+            else if r.src < tr.src && tr.src < r.src + r.len {
+                new_ranges.push(Range {
+                    src: r.src,
+                    dest: r.src,
+                    len: tr.src - r.src + 1,
+                });
+
+                new_ranges.push(Range {
+                    src: tr.src,
+                    dest: tr.dest,
+                    len: min(r.src + r.len - tr.src, tr.len),
+                });
+
+                // r     |-----------|
+                // tr      |----|
+                if tr.src + tr.len < r.src + r.len {
+                    new_ranges.push(Range {
+                        src: tr.src + tr.len,
+                        dest: tr.src + tr.len,
+                        len: r.src + r.len - (tr.src + tr.len),
+                    });
+                }
+            } else {
+                new_ranges.push(r);
+            }
+        }
+
+        ranges = new_ranges;
+    }
+
+    ranges.into_iter().map(|r| Range {
+        src: r.dest,
+        dest: r.dest,
+        len: r.len,
+    }).collect()
+}
+
 fn part2(data: &(Vec<u64>, Vec<Transformation>)) -> i32 {
     let (seeds, transformation) = data;
 
-    transformation.len() as i32
+    let mut ranges: Vec<Range> = vec![];
+
+    // convert seeds to ranges
+    for i in (0..seeds.len()).step_by(2) {
+        ranges.push(Range {
+            src: seeds[i],
+            dest: seeds[i],
+            len: seeds[i + 1],
+        })
+    }
+
+    let mut next_ranges: Vec<Range> = vec![];
+
+    for t in transformation {
+        for range in ranges {
+            next_ranges.append(&mut do_range_transformation(range.clone(), t));
+        }
+
+        ranges = next_ranges;
+        next_ranges = vec![];
+    }
+
+
+    (*ranges.iter().map(|r| r.src).collect::<Vec<u64>>().iter().min().unwrap()) as i32
 }
 
 #[cfg(test)]
@@ -210,13 +314,40 @@ humidity-to-location map:
 
     #[test]
     fn part2_works() {
-        let test_string = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
-Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
-Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
-Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
-Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
-Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11".to_string();
+        let test_string = "seeds: 79 14 55 13
 
-        assert_eq!(part2(&process_input(test_string)), 35);
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4".to_string();
+
+        assert_eq!(part2(&process_input(test_string)), 46);
     }
 }
