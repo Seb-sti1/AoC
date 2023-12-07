@@ -3,6 +3,7 @@ use std::fs;
 use regex::{Regex};
 
 const CARDS: [char; 13] = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+const CARDS_part2: [char; 13] = ['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J'];
 
 #[derive(Debug)]
 enum HandType {
@@ -72,22 +73,23 @@ impl PartialEq for Hand {
 
 fn main() {
     let contents = fs::read_to_string("input").expect("Should have been able to read the file");
-
     println!("Day 7");
-    let data = process_input(&contents);
 
+    let data = process_input(&contents, false);
     println!("Part 1: {}", part1(&data));
+
+    let data = process_input(&contents, true);
     println!("Part 2: {}", part2(&data));
 }
 
-fn count_cards(value: &str) -> (HandType, [i32; 5]) {
+fn count_cards(value: &str, part2: bool) -> (HandType, [i32; 5]) {
     let mut count: [i32; 13] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let mut letters: [i32; 5] = [-1, -1, -1, -1, -1];
 
 
     for value_idx in 0..value.len() {
         let c = value.as_bytes()[value_idx] as char;
-        for (i, card) in CARDS.iter().enumerate() {
+        for (i, card) in (if part2 { CARDS_part2 } else { CARDS }).iter().enumerate() {
             if c == *card {
                 count[i] += 1;
 
@@ -99,11 +101,16 @@ fn count_cards(value: &str) -> (HandType, [i32; 5]) {
     let mut n_same_max = 0;
     let mut n_same_min = 100;
 
-    for n in count {
-        if n > 0 {
-            n_same_max = max(n_same_max, n);
-            n_same_min = min(n_same_min, n);
+    for (idx, n) in count.iter().enumerate() {
+        if *n > 0 && (!part2 || idx < 12){
+            n_same_max = max(n_same_max, *n);
+            n_same_min = min(n_same_min, *n);
         }
+    }
+
+    // add joker to the max (then translate to the card we have the most)
+    if part2 {
+        n_same_max += count[12];
     }
 
     let mut hand_type = HandType::HighCard;
@@ -139,7 +146,7 @@ fn count_cards(value: &str) -> (HandType, [i32; 5]) {
 ///
 /// # Arguments
 /// * `content` - the content of the input file
-fn process_input(content: &String) -> Vec<Hand> {
+fn process_input(content: &String, part2: bool) -> Vec<Hand> {
     let lines: Vec<&str> = content.split("\n").collect();
 
     let line_re: Regex = Regex::new(r"([AKQJT0-9]+) (\d+)").unwrap();
@@ -150,7 +157,7 @@ fn process_input(content: &String) -> Vec<Hand> {
         let result = line_re.captures(lines[i]).unwrap();
 
         let value = result.get(1).unwrap().as_str().to_string();
-        let (hand_type, letters) = count_cards(&value);
+        let (hand_type, letters) = count_cards(&value, part2);
 
         hands.push(Hand {
             value,
@@ -177,7 +184,6 @@ fn part1(data: &Vec<Hand>) -> i32 {
 }
 
 fn part2(data: &Vec<Hand>) -> i32 {
-
     part1(data)
 }
 
@@ -194,7 +200,7 @@ KK677 28
 KTJJT 220
 QQQJA 483".to_string();
 
-        assert_eq!(part1(&process_input(&test_string)), 6440);
+        assert_eq!(part1(&process_input(&test_string, false)), 6440);
     }
 
     #[test]
@@ -214,7 +220,7 @@ AAKQJ 31
 AKQJT 41
 23456 43".to_string();
 
-        assert_eq!(part1(&process_input(&test_string)), 1343);
+        assert_eq!(part1(&process_input(&test_string, false)), 1343);
     }
 
     #[test]
@@ -225,6 +231,6 @@ KK677 28
 KTJJT 220
 QQQJA 483".to_string();
 
-        assert_eq!(part2(&process_input(&test_string)), 6440);
+        assert_eq!(part2(&process_input(&test_string, true)), 5905);
     }
 }
