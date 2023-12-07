@@ -10,7 +10,7 @@ struct Leaderboard {
 fn main() {
     let contents = fs::read_to_string("input").expect("Should have been able to read the file");
 
-    println!("Day 5");
+    println!("Day 6");
 
     println!("Part 1: {}", part1(&process_input(&contents)));
     println!("Part 2: {}", part2(&process_input(&contents.replace(" ", ""))));
