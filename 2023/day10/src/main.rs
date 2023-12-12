@@ -124,7 +124,7 @@ impl PositionStr for String {
 
 fn main() {
     let contents = fs::read_to_string("input").expect("Should have been able to read the file");
-    println!("Day 9");
+    println!("Day 10");
 
     let data = process_input(&contents);
 
