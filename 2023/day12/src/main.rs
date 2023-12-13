@@ -70,26 +70,22 @@ impl Line {
         operational.iter().for_each(|i: &i32| self.states[*i as usize] = State::Operational);
     }
 
-    fn is_coherent(&self) -> bool {
-        if self.numbers.iter().sum::<i32>() > self.states.iter().filter(|s: &&State| **s != State::Operational).collect::<Vec<&State>>().len() as i32 {
-            return false;
-        }
-
+    fn find_next_number_to_add(&self) -> (i32, i32) {
         let mut consecutive = 0;
         let mut n_idx = 0;
 
         for s in &self.states {
             match s {
                 State::Unknown => {
-                    return (n_idx < self.numbers.len() && consecutive <= self.numbers[n_idx]) || consecutive == 0;
+                    return (consecutive, n_idx);
                 }
                 State::Damaged => {
                     consecutive += 1;
                 }
                 State::Operational => {
                     if consecutive > 0 {
-                        if n_idx == self.numbers.len() || consecutive != self.numbers[n_idx] {
-                            return false;
+                        if n_idx == self.numbers.len() as i32 || consecutive != self.numbers[n_idx as usize] {
+                            return (-1, self.numbers.len() as i32);
                         }
 
                         n_idx += 1;
@@ -99,36 +95,28 @@ impl Line {
             }
         }
 
-        return (n_idx == self.numbers.len() && consecutive == 0) || (n_idx == self.numbers.len() - 1 && self.numbers[n_idx] == consecutive);
+        return (consecutive, n_idx);
+    }
+
+    fn is_coherent(&self) -> bool {
+        if self.numbers.iter().sum::<i32>() > self.states.iter().filter(|s: &&State| **s != State::Operational).collect::<Vec<&State>>().len() as i32 {
+            return false;
+        }
+
+        let (consecutive, n_idx) = self.find_next_number_to_add();
+
+        let r = (n_idx == self.numbers.len() as i32 && consecutive == 0) || (n_idx < self.numbers.len() as i32 && consecutive <= self.numbers[n_idx as usize]);
+        r
     }
 
     fn is_correct(&self) -> bool {
-        let mut n_idx = 0;
-        let mut next = 0;
-
-        for s in &self.states {
-            match *s {
-                State::Damaged => {
-                    next += 1;
-                }
-                State::Operational => {
-                    if next != 0 {
-                        if n_idx == self.numbers.len() || self.numbers[n_idx] != next {
-                            return false;
-                        }
-
-                        next = 0;
-                        n_idx += 1;
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        return (n_idx == self.numbers.len() && next == 0) || (n_idx == self.numbers.len() - 1 && self.numbers[n_idx] == next);
+        let (consecutive, n_idx) = self.find_next_number_to_add();
+        return (n_idx == self.numbers.len() as i32 && consecutive == 0) || (n_idx == (self.numbers.len() - 1) as i32 && self.numbers[n_idx as usize] == consecutive);
     }
 
     fn next_states(&self) -> Vec<Line> {
+        // TODO: instead of changing 1 state, change how many needed to do next number
+
         let mut first_unknown: i32 = -1;
 
         for (idx, s) in self.states.iter().enumerate() {
@@ -257,11 +245,13 @@ fn part1(input: &Input) -> u64 {
             current_states = next_states;
         }
 
-        count += current_states.iter().filter(|l| l.is_correct()).collect::<Vec<&Line>>().len() as u64;
+        let le = current_states.iter().filter(|l| l.is_correct()).collect::<Vec<&Line>>().len() as u64;
+        println!("{} ", le);
+        count += le;
 
-        if idx % 20 == 0 {
-            println!("{}%", idx * 100 / size);
-        }
+        // if idx % 20 == 0 {
+        //     println!("{}%", idx * 100 / size);
+        // }
     }
 
     count
