@@ -77,7 +77,6 @@ fn part2(input: &Input) -> u64 {
         let label = m.get(1).unwrap().as_str().to_string();
         let slot = hash(&label) as usize;
         let ope = m.get(2).unwrap().as_str();
-        println!("{:?} ({:?}) {:?}", &m.get(1).unwrap().as_str(), slot, ope);
 
         if ope.eq("=") {
             let focal = m.get(3).unwrap().as_str().parse::<u64>().unwrap();
