@@ -23,3 +23,4 @@ _Because it was in the 2022 README.md, I put the times here but know that it is 
 | 12                    | 16:55:23      | 26349         | -             | -             |
 | 14                    | 17:09:07      | 27725         | 18:34:22      | 21753         |
 | 15 (restarted in jan) | >24h          | 44938         | >24h          | 40791         | 
+| 16                    | >24h          | 36346         | >24h          | 35328         | 
